@@ -1,0 +1,32 @@
+# Local tools and editor state
+.DS_Store
+.claude/
+.vscode/
+.idea/
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/dist-constellations/
+frontend/.vite/
+
+# Downloaded survey catalogues and generated analysis products.
+# These are multi-GB/reproducible and exceed GitHub's normal file limits.
+data/raw/*
+data/cache/*
+
+# The judge-facing Constellation Unfolder imports this compact, curated data product.
+!data/cache/constellations.json

@@ -1,0 +1,15 @@
+astropy
+astroquery
+fastapi
+galpy
+gaiadr3-zeropoint
+numpy
+pandas
+pyarrow
+pydantic
+pyvo
+pytest
+scikit-learn
+scipy
+uvicorn[standard]
+
