@@ -1,0 +1,8 @@
+.sl-earth {
+  position: absolute; right: 30px; bottom: 26px; z-index: 3; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  pointer-events: none; animation: sl-earth-in 1.4s cubic-bezier(0.22, 1, 0.36, 1) both 0.4s;
+}
+.sl-earth canvas { display: block; filter: drop-shadow(0 0 24px rgba(90, 150, 255, 0.35)); }
+.sl-earth figcaption { font: 600 11px Nunito, Inter, sans-serif; letter-spacing: 0.14em; color: rgba(190, 215, 255, 0.75); text-transform: lowercase; }
+@keyframes sl-earth-in { from { opacity: 0; transform: translateY(20px) scale(0.8); } }
+@media (max-width: 900px) { .sl-earth { display: none; } }

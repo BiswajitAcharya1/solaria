@@ -1,0 +1,39 @@
+.sc-root {
+  position: fixed; inset: 0; background: #000; overflow: hidden; color: #eef2ff; z-index: 60;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; user-select: none;
+}
+.sc-gl, .sc-gl canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.sc-gl canvas { cursor: grab; touch-action: none; }
+.sc-flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 50%, #fff 0%, #e8efff 40%, #b9c9ff 100%); mix-blend-mode: screen; }
+
+.sc-caption {
+  position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%); margin: 0; width: calc(100% - 32px); text-align: center;
+  font-family: 'Instrument Serif', Georgia, serif; font-size: clamp(22px, 3.2vw, 38px); letter-spacing: 0.01em; color: rgba(235, 240, 255, 0.92);
+  text-shadow: 0 2px 30px #000; pointer-events: none; animation: sc-say 1.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.sc-caption:empty { display: none; }
+@keyframes sc-say { from { opacity: 0; transform: translate(-50%, 12px); filter: blur(10px); } }
+
+.sc-end { position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 12px; animation: sc-say 1.2s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.sc-hint { font-size: 12px; color: rgba(170, 182, 214, 0.6); letter-spacing: 0.08em; }
+
+/* glow border button (Sonder GlowBorderButtonStyle) */
+@property --sc-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.sc-enter {
+  padding: 13px 28px; border-radius: 999px; font: 600 15px/1 inherit; font-family: inherit; color: #fff; cursor: pointer;
+  background: linear-gradient(#05070f, #05070f) padding-box,
+    conic-gradient(from var(--sc-angle), rgba(255, 255, 255, 0.15), #8fd0ff, #ffc95c, rgba(255, 255, 255, 0.15)) border-box;
+  border: 1.4px solid transparent; animation: sc-spin 8s linear infinite;
+  box-shadow: 0 0 40px -10px rgba(143, 208, 255, 0.7); transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.sc-enter:hover { transform: scale(1.04); }
+.sc-enter:active, .sc-ghost:active { transform: scale(0.96); }
+@keyframes sc-spin { to { --sc-angle: 360deg; } }
+.sc-ghost {
+  padding: 8px 16px; border-radius: 999px; font: 500 13px/1 inherit; font-family: inherit; color: rgba(200, 210, 240, 0.75); cursor: pointer;
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); transition: color 0.2s, background 0.2s, transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.sc-ghost:hover { color: #fff; background: rgba(255, 255, 255, 0.09); }
+.sc-skip { position: absolute; right: 24px; bottom: 24px; animation: sc-say 1s both 2s; }
+
+@media (prefers-reduced-motion: reduce) { .sc-enter { animation: none; } }

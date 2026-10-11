@@ -1,14 +1,15 @@
 """FastAPI application: scientific computation endpoints + the built web client."""
 from __future__ import annotations
 
-import inspect
 import json
 import math
 import threading
 from contextlib import asynccontextmanager
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Dict
 
 import numpy as np
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -18,12 +19,15 @@ from . import analysis, chemistry, families, orbits, report
 from . import config as C
 from .store import STORE
 
-MAX_DISCOVER_STARS = 30000   # same limit as analysis.discover (HDBSCAN: ~10 s at 28k stars)
+MAX_DISCOVER_STARS = 30000
 MAX_GROUP = 400
-# Orbit budget per request, in units of "orbits x 100 Myr": ~4000 integrations of 100 Myr
-# take ~10 s in the McMillan (2017) potential on a laptop, keeping requests interactive.
 ORBIT_BUDGET = 4000
-MAX_GROUP_MC = 4000          # members x Monte Carlo samples for a group traceback
+MAX_GROUP_MC = 4000
+
+# Thread pool for async computations
+_executor = ThreadPoolExecutor(max_workers=4)
+_async_results: Dict[str, Any] = {}
+_async_lock = threading.Lock()
 
 
 def clean(o):
@@ -63,7 +67,7 @@ def _warm():
         _ready["potential"] = True
         analysis.anomaly_model()
         _ready["anomaly"] = True
-    except Exception as e:  # surfaced via /api/status
+    except Exception as e:
         _ready["error"] = repr(e)
 
 
@@ -140,9 +144,13 @@ POINT_COLS = ["X", "Y", "Z", "U", "V", "W", "FE_H", "MG_FE", "ecc", "zmax", "Lz"
 
 
 @app.get("/api/points")
-def points():
-    """All stars as a row-major float32 matrix (columns in X-Columns); NaN = not measured."""
+def points(format: str = Query("binary", pattern="^(binary|json)$")):
+    """All stars as row-major float32 (binary) or JSON array. NaN = not measured."""
     _stars()
+    if format == "json":
+        s = STORE.stars
+        data = {c: s[c].to_numpy(float).tolist() for c in POINT_COLS}
+        return {"columns": POINT_COLS, "rows": len(s), "data": data}
     buf = STORE.points_bytes(POINT_COLS)
     return Response(buf, media_type="application/octet-stream",
                     headers={"X-Columns": ",".join(POINT_COLS), "X-Rows": str(len(STORE.stars)),
@@ -213,6 +221,44 @@ def orbits_ep(r: OrbitReq):
     return _guard(analysis.orbit_history, ids, r.lookback_myr, r.n_mc, list(dict.fromkeys(r.potentials)))
 
 
+@app.post("/api/orbits/async")
+def orbits_async(r: OrbitReq, background_tasks: BackgroundTasks):
+    """Submit orbit integration as background task."""
+    import uuid
+    job_id = str(uuid.uuid4())[:8]
+    ids = _ids(r.source_ids, 1, 50)
+    _stars()
+    cost = len(ids) * r.n_mc * len(set(r.potentials)) * max(r.lookback_myr, 100.0) / 100.0
+    if cost > ORBIT_BUDGET:
+        raise HTTPException(400, f"request too large: cost {cost:.0f} > {ORBIT_BUDGET}")
+    bad = [p for p in r.potentials if p not in C.POTENTIALS]
+    if bad:
+        raise HTTPException(400, f"unknown potential(s) {bad}; options: {list(C.POTENTIALS)}")
+
+    def _run():
+        try:
+            result = _guard(analysis.orbit_history, ids, r.lookback_myr, r.n_mc, list(dict.fromkeys(r.potentials)))
+            with _async_lock:
+                _async_results[job_id] = {"status": "done", "result": result}
+        except Exception as e:
+            with _async_lock:
+                _async_results[job_id] = {"status": "error", "error": str(e)}
+
+    with _async_lock:
+        _async_results[job_id] = {"status": "running"}
+    background_tasks.add_task(_run)
+    return {"job_id": job_id, "status": "running", "poll": f"/api/orbits/status/{job_id}"}
+
+
+@app.get("/api/orbits/status/{job_id}")
+def orbits_status(job_id: str):
+    with _async_lock:
+        result = _async_results.get(job_id)
+    if not result:
+        raise HTTPException(404, "job not found")
+    return result
+
+
 @app.get("/api/chem_neighbours/{source_id}")
 def chem_neighbours(source_id: int, n: int = Query(25, ge=1, le=500)):
     _stars()
@@ -254,9 +300,13 @@ def discover(r: DiscoverReq):
     if n > MAX_DISCOVER_STARS:
         raise HTTPException(400, f"region contains {n} stars (limit {MAX_DISCOVER_STARS} for interactive "
                                  "clustering): reduce the radius or raise the parallax/error cut")
-    kw = {"selection": r.selection} if "selection" in inspect.signature(analysis.discover).parameters else {}
-    return _guard(analysis.discover, tuple(r.center_pc), r.radius_pc, r.mode, r.min_cluster_size, r.min_samples,
-                  r.min_poe, r.pos_scale_pc, r.vel_scale_kms, **kw)
+    from .analysis.discovery import run_discovery, DiscoveryParams
+    params = DiscoveryParams(
+        center_pc=tuple(r.center_pc), radius_pc=r.radius_pc, mode=r.mode,
+        min_cluster_size=r.min_cluster_size, min_samples=r.min_samples,
+        min_poe=r.min_poe, pos_scale_pc=r.pos_scale_pc, vel_scale_kms=r.vel_scale_kms,
+    )
+    return _guard(run_discovery, params, _stars())
 
 
 class EvalReq(BaseModel):
@@ -270,8 +320,6 @@ class EvalReq(BaseModel):
 def evaluate(r: EvalReq):
     ids = _ids(r.source_ids, 3, MAX_GROUP)
     _stars()
-    # large groups: fewer Monte Carlo realisations per member keep the traceback interactive;
-    # the value actually used is reported in the result (traceback.n_mc)
     scale = max(r.lookback_myr, 100.0) / 100.0
     n_mc = int(min(r.n_mc, max(8, MAX_GROUP_MC / scale // len(ids))))
     out = _guard(analysis.evaluate_group, ids, r.lookback_myr, n_mc, r.n_null)
@@ -279,6 +327,40 @@ def evaluate(r: EvalReq):
         out.setdefault("notes", []).append(f"Monte Carlo realisations per member reduced from {r.n_mc} to {n_mc} "
                                            f"for a {len(ids)}-member group to bound computation time.")
     return out
+
+
+@app.post("/api/evaluate/async")
+def evaluate_async(r: EvalReq, background_tasks: BackgroundTasks):
+    """Submit evaluation as background task; poll /api/evaluate/status/{job_id} for result."""
+    import uuid
+    job_id = str(uuid.uuid4())[:8]
+    ids = _ids(r.source_ids, 3, MAX_GROUP)
+    _stars()
+    scale = max(r.lookback_myr, 100.0) / 100.0
+    n_mc = int(min(r.n_mc, max(8, MAX_GROUP_MC / scale // len(ids))))
+
+    def _run():
+        try:
+            result = _guard(analysis.evaluate_group, ids, r.lookback_myr, n_mc, r.n_null)
+            with _async_lock:
+                _async_results[job_id] = {"status": "done", "result": result}
+        except Exception as e:
+            with _async_lock:
+                _async_results[job_id] = {"status": "error", "error": str(e)}
+
+    with _async_lock:
+        _async_results[job_id] = {"status": "running"}
+    background_tasks.add_task(_run)
+    return {"job_id": job_id, "status": "running", "poll": f"/api/evaluate/status/{job_id}"}
+
+
+@app.get("/api/evaluate/status/{job_id}")
+def evaluate_status(job_id: str):
+    with _async_lock:
+        result = _async_results.get(job_id)
+    if not result:
+        raise HTTPException(404, "job not found")
+    return result
 
 
 class EncReq(BaseModel):

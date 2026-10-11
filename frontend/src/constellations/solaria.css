@@ -1,0 +1,225 @@
+/* solaria: a black sky with text floating on it. No tiles, no cards. */
+.sl {
+  --ink: #f4f1ea;
+  --ink-2: rgba(244, 241, 234, 0.74);
+  --ink-3: rgba(244, 241, 234, 0.48);
+  --gold: #ffcf7a;
+  --sky: #9ec8ff;
+  --rose: #ff9fc4;
+  --mint: #7fe6c4;
+  --display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  --soft: 'Nunito', 'Avenir Next', system-ui, sans-serif;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 18px rgba(0, 0, 0, 0.85);
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: var(--ink);
+  font-family: var(--soft);
+  font-weight: 400;
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+.sl * { box-sizing: border-box; }
+.sl button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+.sl-sky { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+.sl-center { position: absolute; inset: 0; display: grid; place-items: center; }
+.sl-soft { font-family: var(--display); font-style: italic; font-weight: 300; font-size: 22px; color: var(--ink-2); }
+.sl-dim { color: var(--ink-3); }
+
+/* soft vignettes so overlay text stays legible over bright stars */
+.sl-app::before, .sl-app::after, .sl-film::after {
+  content: ''; position: absolute; left: 0; right: 0; pointer-events: none; z-index: 1;
+}
+.sl-app::before { top: 0; height: 200px; background: linear-gradient(rgba(0, 0, 0, 0.55), transparent); }
+.sl-app::after, .sl-film::after { bottom: 0; height: 260px; background: linear-gradient(transparent, rgba(0, 0, 0, 0.7)); }
+
+/* ---------------------------------------------------------------- star labels */
+.sl-labels { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.sl-label { position: absolute; left: 0; top: 0; transition: opacity 0.4s; will-change: transform; }
+.sl-label span {
+  position: absolute; left: 14px; top: -22px; white-space: nowrap;
+  font-family: var(--soft); font-weight: 600; font-size: 13px; letter-spacing: 0.01em;
+  color: var(--ink-2); text-shadow: var(--shadow);
+  animation: sl-fade 0.8s ease both;
+}
+.sl-label span em { font-style: normal; font-weight: 300; color: var(--sky); margin-left: 2px; }
+.sl-label.on span { color: #fff; font-size: 15px; }
+.sl-ring {
+  position: absolute; left: -13px; top: -13px; width: 26px; height: 26px; border-radius: 50%;
+  border: 1.5px dashed; opacity: 0.9; animation: sl-spin 14s linear infinite, sl-fade 1s ease both;
+}
+.sl-label.on .sl-ring { width: 34px; height: 34px; left: -17px; top: -17px; }
+
+/* ---------------------------------------------------------------- film */
+.sl-caption {
+  position: absolute; left: 50%; bottom: 13vh; transform: translateX(-50%);
+  width: min(1100px, 88vw); text-align: center; z-index: 3; text-shadow: var(--shadow);
+  animation: sl-rise 1.4s cubic-bezier(.2, .7, .2, 1) both;
+}
+.sl-era {
+  display: block; font-family: var(--soft); font-weight: 800; font-size: clamp(13px, 1.3vw, 17px);
+  letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold); margin-bottom: 18px;
+}
+.sl-caption p {
+  margin: 0; font-family: var(--display); font-weight: 300; font-size: clamp(30px, 3.6vw, 54px);
+  line-height: 1.18; letter-spacing: -0.01em; color: var(--ink);
+}
+.sl-progress { position: absolute; left: 50%; bottom: 5vh; transform: translateX(-50%); display: flex; gap: 8px; z-index: 3; }
+.sl-progress i { width: 26px; height: 2px; border-radius: 2px; background: rgba(255, 255, 255, 0.2); transition: background 0.6s; }
+.sl-progress i.done { background: rgba(255, 255, 255, 0.55); }
+.sl-progress i.on { background: var(--gold); }
+.sl-skip {
+  position: absolute; right: 32px; top: 26px; z-index: 3; font-weight: 600; font-size: 14px; color: var(--ink-2) !important;
+  text-shadow: var(--shadow); transition: color 0.3s;
+}
+.sl-skip:hover { color: #fff !important; }
+
+.sl-title {
+  position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; text-shadow: var(--shadow); cursor: pointer;
+}
+.sl-title h1 {
+  margin: 0; font-family: var(--display); font-weight: 300; font-style: italic; font-size: clamp(72px, 11vw, 168px);
+  letter-spacing: -0.02em; line-height: 1;
+}
+.sl-title h1 span { display: inline-block; animation: sl-letter 1.1s cubic-bezier(.2, .8, .2, 1) both; }
+.sl-title p { font-family: var(--soft); font-weight: 300; font-size: 20px; letter-spacing: 0.2em; color: var(--ink-2); margin: 18px 0 40px; animation: sl-fade 1.4s 0.9s both; }
+.sl-enter {
+  font-family: var(--soft) !important; font-weight: 700 !important; font-size: 15px !important; letter-spacing: 0.14em;
+  color: #000 !important; background: var(--ink) !important; padding: 12px 26px !important; border-radius: 99px;
+  animation: sl-fade 1s 1.5s both; transition: transform 0.25s, background 0.25s;
+}
+.sl-enter:hover { transform: scale(1.04); background: #fff !important; }
+
+/* ---------------------------------------------------------------- explorer */
+.sl-brand { position: absolute; left: 36px; top: 28px; z-index: 3; display: flex; align-items: baseline; gap: 14px; text-shadow: var(--shadow); }
+.sl-brand b { font-family: var(--display); font-style: italic; font-weight: 400; font-size: 30px; }
+.sl-brand span { font-weight: 300; font-size: 14px; letter-spacing: 0.08em; color: var(--ink-3); }
+
+.sl-story { position: absolute; left: 36px; top: 17vh; z-index: 3; max-width: min(520px, 42vw); text-shadow: var(--shadow); pointer-events: none; }
+.sl-story h2 {
+  margin: 0; font-family: var(--display); font-weight: 300; font-size: clamp(56px, 6.6vw, 104px); line-height: 0.95;
+  letter-spacing: -0.02em; animation: sl-rise 1.2s cubic-bezier(.2, .7, .2, 1) both;
+}
+.sl-english { margin: 8px 0 26px; font-family: var(--display); font-style: italic; font-weight: 300; font-size: 24px; color: var(--ink-2); }
+.sl-verdict { margin: 0 0 10px; font-family: var(--display); font-style: italic; font-weight: 500; font-size: 34px; animation: sl-fade 1s 0.3s both; }
+.sl-when { color: var(--sky); }
+.sl-line { margin: 0 0 8px; font-size: 18px; line-height: 1.45; font-weight: 400; animation: sl-fade 1s 0.5s both; }
+
+.sl-stars {
+  position: absolute; right: 36px; top: 17vh; z-index: 3; width: min(320px, 30vw); text-align: right; text-shadow: var(--shadow);
+  max-height: 60vh; overflow-y: auto; scrollbar-width: none;
+}
+.sl-family { margin: 0 0 12px; font-weight: 700; font-size: 14px; line-height: 1.4; }
+.sl-stars ul { list-style: none; margin: 14px 0 0; padding: 0; }
+.sl-stars li {
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 5px 0; cursor: pointer;
+  font-size: 15px; color: var(--ink-2); transition: color 0.2s, transform 0.2s;
+}
+.sl-stars li:hover, .sl-stars li.on { color: #fff; transform: translateX(-4px); }
+.sl-stars li i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.sl-stars li span { font-weight: 600; }
+.sl-stars li em { font-style: normal; font-weight: 300; color: var(--sky); min-width: 64px; }
+.sl-stars li b { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+
+.sl-note {
+  position: absolute; left: 36px; bottom: 150px; z-index: 3; max-width: 380px; text-shadow: var(--shadow);
+  animation: sl-rise 0.6s cubic-bezier(.2, .7, .2, 1) both;
+}
+.sl-note h3 { margin: 0 0 6px; font-family: var(--display); font-weight: 400; font-size: 30px; display: flex; align-items: center; gap: 12px; }
+.sl-note h3 i { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 14px currentColor; }
+.sl-note p { margin: 2px 0; font-size: 16px; color: var(--ink-2); }
+.sl-note p b { color: #fff; font-weight: 700; }
+.sl-note p span { color: var(--ink-3); font-weight: 300; }
+
+.sl-picker {
+  position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 3;
+  display: flex; gap: 26px; flex-wrap: wrap; justify-content: center; width: min(1100px, 92vw); text-shadow: var(--shadow);
+}
+.sl-picker button { font-family: var(--display) !important; font-weight: 300 !important; font-size: 21px !important; color: var(--ink-3) !important; transition: color 0.3s; position: relative; }
+.sl-picker button:hover { color: var(--ink) !important; }
+.sl-picker button.on { color: var(--gold) !important; font-style: italic; }
+.sl-picker button.on::after { content: ''; position: absolute; left: 20%; right: 20%; bottom: -6px; height: 1.5px; background: var(--gold); border-radius: 2px; }
+
+.sl-time {
+  position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); z-index: 3;
+  display: flex; align-items: center; gap: 22px; text-shadow: var(--shadow); white-space: nowrap;
+}
+.sl-time button { font-weight: 600; font-size: 14px; color: var(--ink-3) !important; transition: color 0.2s; }
+.sl-time button:hover { color: var(--ink) !important; }
+.sl-play {
+  width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.55) !important;
+  color: #fff !important; font-size: 13px !important; display: grid; place-items: center;
+}
+.sl-play:hover { border-color: var(--gold) !important; color: var(--gold) !important; }
+.sl-now { font-family: var(--display); font-style: italic; font-weight: 400; font-size: 22px; color: var(--sky); min-width: 250px; text-align: center; }
+
+.sl-corner { position: absolute; right: 36px; top: 30px; z-index: 3; display: flex; gap: 22px; align-items: center; text-shadow: var(--shadow); }
+.sl-corner button { font-weight: 600; font-size: 14px; color: var(--ink-3) !important; transition: color 0.2s; }
+.sl-corner button:hover, .sl-corner button.on { color: var(--ink) !important; }
+.sl-hint { font-weight: 300; font-size: 13px; color: var(--rose); animation: sl-fade 0.6s both; }
+
+/* full-screen text overlays (no panels: the sky stays visible behind) */
+.sl-overlay {
+  position: absolute; inset: 0; z-index: 5; background: rgba(0, 0, 0, 0.72); backdrop-filter: blur(6px);
+  display: flex; justify-content: center; overflow-y: auto; animation: sl-fade 0.4s both;
+}
+.sl-overlay-in { width: min(1100px, 90vw); padding: 10vh 0 8vh; }
+.sl-overlay input {
+  width: 100%; background: none; border: 0; border-bottom: 1.5px solid rgba(255, 255, 255, 0.25); outline: none;
+  font-family: var(--display); font-weight: 300; font-size: 44px; color: var(--ink); padding: 6px 0 12px;
+}
+.sl-overlay input::placeholder { color: var(--ink-3); font-style: italic; }
+.sl-legend { display: flex; gap: 28px; margin: 18px 0 30px; font-weight: 700; font-size: 15px; }
+.sl-names { columns: 4 200px; column-gap: 34px; }
+.sl-names button { display: block; text-align: left; margin: 0 0 14px; font-family: var(--display) !important; font-size: 21px !important; font-weight: 300 !important; break-inside: avoid; transition: transform 0.2s; }
+.sl-names button:hover { transform: translateX(4px); }
+.sl-names button.on { font-style: italic; text-decoration: underline; text-underline-offset: 6px; }
+.sl-names small { display: block; font-family: var(--soft); font-size: 12px; font-weight: 400; color: var(--ink-3); margin-top: 1px; }
+.sl-how { max-width: 760px; }
+.sl-how h2 { font-family: var(--display); font-style: italic; font-weight: 300; font-size: 56px; margin: 0 0 30px; }
+.sl-how p { font-size: 19px; line-height: 1.6; color: var(--ink-2); margin: 0 0 18px; }
+.sl-how p b { color: var(--gold); font-weight: 700; }
+.sl-how .sl-enter { margin-top: 18px; animation: none; }
+
+.sl-research { position: absolute; right: 24px; top: 80px; bottom: 140px; z-index: 4; overflow-y: auto; animation: sl-fade 0.4s both; }
+.sl-x { position: absolute; right: 10px; top: 6px; z-index: 2; font-size: 26px; color: var(--ink-2) !important; }
+
+/* narrower windows: the story becomes a compact header, the star list hides, controls stack at the bottom */
+@media (max-width: 1100px) {
+  .sl-brand { left: 22px; top: 18px; }
+  .sl-brand b { font-size: 24px; }
+  .sl-brand span { display: none; }
+  .sl-corner { right: 22px; top: 22px; gap: 16px; }
+  .sl-corner button { font-size: 13px; }
+  .sl-hint { display: none; }
+  .sl-story { left: 22px; right: 22px; top: 62px; max-width: none; }
+  .sl-story h2 { font-size: clamp(40px, 7vw, 64px); display: inline; }
+  .sl-english { display: inline; margin: 0 0 0 14px; font-size: 18px; }
+  .sl-verdict { font-size: 24px; margin: 10px 0 4px; }
+  .sl-line { font-size: 15px; margin: 0 0 4px; }
+  .sl-line.sl-dim:last-child { display: none; }
+  .sl-stars { display: none; }
+  .sl-note { left: 22px; bottom: 132px; max-width: 70vw; }
+  .sl-note h3 { font-size: 22px; }
+  .sl-note p { font-size: 14px; }
+  .sl-picker { bottom: 74px; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; gap: 20px; width: calc(100vw - 44px); scrollbar-width: none; padding-bottom: 8px; }
+  .sl-picker button { font-size: 18px !important; white-space: nowrap; }
+  .sl-time { bottom: 20px; gap: 14px; }
+  .sl-time button:not(.sl-play) { font-size: 12px; }
+  .sl-play { width: 38px; height: 38px; }
+  .sl-now { min-width: 0; font-size: 18px; }
+  .sl-caption p { font-size: clamp(24px, 4.4vw, 40px); }
+}
+@media (max-width: 640px) {
+  .sl-time button:not(.sl-play):not(:last-child):not(:first-child) { display: none; }
+  .sl-corner button:last-child { display: none; }
+}
+
+@keyframes sl-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sl-rise { from { opacity: 0; transform: translate(var(--tx, 0), 22px); } to { opacity: 1; transform: translate(var(--tx, 0), 0); } }
+.sl-caption { --tx: -50%; }
+@keyframes sl-letter { from { opacity: 0; transform: translateY(30px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes sl-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .sl * { animation-duration: 0.01ms !important; } }

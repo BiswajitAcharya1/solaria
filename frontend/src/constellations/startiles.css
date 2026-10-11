@@ -1,0 +1,44 @@
+/* right-hand star tiles: scoped to .st-* */
+.st {
+  position: absolute; right: 28px; top: 15vh; z-index: 3; width: min(340px, 30vw); max-height: 68vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 14px; padding: 2px 4px 8px; scrollbar-width: none; text-transform: lowercase;
+  transition: opacity 0.3s, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.st::-webkit-scrollbar { display: none; }
+.st.st-hidden { opacity: 0; transform: translateX(20px); pointer-events: none; }
+.st-group { display: flex; flex-direction: column; gap: 8px; }
+.st-group header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; letter-spacing: 0.02em; padding: 0 4px; }
+.st-group header i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
+.st-group header span { flex-basis: 100%; font-weight: 400; font-size: 12px; color: rgba(200, 210, 235, 0.6); margin-left: 17px; margin-top: -4px; }
+.st-others { color: rgba(220, 228, 245, 0.85); }
+.st-others i { background: rgba(220, 228, 245, 0.5); }
+
+.st-tile {
+  --tone: rgba(255, 255, 255, 0.14);
+  display: grid; grid-template-columns: 30px 1fr auto; grid-template-areas: 'orb main dist' 'bar bar bar' 'light light light';
+  align-items: center; column-gap: 12px; row-gap: 6px; width: 100%; padding: 12px 14px; border-radius: 18px; text-align: left; cursor: pointer;
+  color: #eef2ff; font: inherit; background: rgba(10, 14, 30, 0.62); border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 3px solid var(--tone); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s, border-color 0.2s, box-shadow 0.25s;
+  animation: st-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes st-in { from { opacity: 0; transform: translateX(14px); } }
+.st-tile:hover, .st-tile.on { transform: translateX(-4px); background: rgba(22, 30, 56, 0.78); border-color: rgba(255, 255, 255, 0.16); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7); }
+.st-orb { grid-area: orb; width: 26px; height: 26px; border-radius: 50%; animation: st-pulse 3.2s ease-in-out infinite; }
+@keyframes st-pulse { 50% { transform: scale(1.08); filter: brightness(1.15); } }
+.st-main { grid-area: main; display: flex; flex-direction: column; min-width: 0; }
+.st-main b { font-size: 15.5px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-main small { font-size: 11.5px; color: rgba(200, 210, 235, 0.65); }
+.st-dist { grid-area: dist; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.05; }
+.st-dist b { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.st-dist small { font-size: 10.5px; color: rgba(200, 210, 235, 0.55); }
+.st-bar { grid-area: bar; height: 4px; border-radius: 99px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+.st-bar i { display: block; height: 100%; border-radius: 99px; animation: st-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both 0.15s; transform-origin: left; }
+@keyframes st-grow { from { transform: scaleX(0); } }
+.st-light { grid-area: light; font-size: 12px; color: rgba(200, 210, 235, 0.7); }
+.st-light b { color: #ffd98a; font-weight: 700; }
+.st-more { align-self: flex-start; margin-left: 4px; padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(255, 255, 255, 0.04); color: rgba(220, 228, 245, 0.85); font: inherit; font-size: 12.5px; cursor: pointer; transition: background 0.2s; }
+.st-more:hover { background: rgba(255, 255, 255, 0.1); }
+.st-hint { margin: 2px 4px 0; font-size: 11px; color: rgba(200, 210, 235, 0.45); }
+@media (max-width: 900px) { .st { display: none; } }
+@media (prefers-reduced-motion: reduce) { .st-orb, .st-tile, .st-bar i { animation: none; } }

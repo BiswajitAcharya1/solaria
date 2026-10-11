@@ -31,6 +31,12 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, module="galpy")
 # Lindegren et al. (2021): median Gaia (E)DR3 parallax zero-point from quasars.
 PARALLAX_ZERO_POINT_MAS = -0.017
 
+
+def corrected_parallax(plx: np.ndarray) -> np.ndarray:
+    """Apply Gaia DR3 parallax zero-point correction."""
+    return np.asarray(plx, float) - PARALLAX_ZERO_POINT_MAS
+
+
 _POT_CACHE: dict[str, object] = {}
 _POT_LOCK = threading.Lock()
 

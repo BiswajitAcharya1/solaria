@@ -10,7 +10,8 @@
     "build:constellations": "tsc -b && vite build --config vite.constellations.config.ts",
     "lint": "eslint .",
     "preview": "vite preview",
-    "preview:constellations": "vite preview --config vite.constellations.config.ts"
+    "preview:constellations": "vite preview --config vite.constellations.config.ts",
+    "test": "node --experimental-strip-types --no-warnings --test tests/*.test.ts"
   },
   "dependencies": {
     "plotly.js-dist-min": "^2.35.2",

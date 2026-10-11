@@ -1,0 +1,148 @@
+/* star journey panel + colour key. Uses the .sl tokens from solaria.css. */
+.sj {
+  position: absolute; right: 24px; top: 72px; bottom: 132px; z-index: 4; width: 392px;
+  display: flex; flex-direction: column;
+  background: rgba(6, 9, 20, 0.82); backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 18px;
+  color: var(--ink, #f4f1ea); font-family: var(--soft, system-ui);
+  animation: sj-in 0.45s cubic-bezier(.2, .7, .2, 1) both;
+}
+@keyframes sj-in { from { opacity: 0; transform: translateX(16px); } }
+
+.sj-head { display: flex; align-items: center; gap: 12px; padding: 18px 18px 10px; }
+.sj-head > i { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 14px currentColor; flex: none; }
+.sj-head div { flex: 1; min-width: 0; }
+.sj-head h3 { margin: 0; font-family: var(--display, serif); font-weight: 400; font-size: 26px; line-height: 1.1; }
+.sj-head p { margin: 2px 0 0; font-size: 13px; color: rgba(244, 241, 234, 0.6); }
+.sj-x { background: none; border: 0; color: rgba(244, 241, 234, 0.55); font-size: 22px; cursor: pointer; padding: 0 4px; line-height: 1; }
+.sj-x:hover { color: #fff; }
+
+.sj-steps { display: flex; gap: 4px; padding: 0 14px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.sj-steps button {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0;
+  background: none; border: 0; cursor: pointer; color: rgba(244, 241, 234, 0.4); font: inherit; font-size: 11px;
+}
+.sj-steps b {
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11px;
+  border: 1px solid currentColor;
+}
+.sj-steps button.done { color: rgba(244, 241, 234, 0.7); }
+.sj-steps button.on { color: var(--gold, #ffcf7a); }
+.sj-steps button.on b { background: var(--gold, #ffcf7a); color: #10131f; border-color: transparent; }
+
+.sj-body { flex: 1; overflow-y: auto; padding: 14px 18px 8px; animation: sj-fade 0.35s both; scrollbar-width: thin; }
+@keyframes sj-fade { from { opacity: 0; transform: translateY(6px); } }
+.sj-body h4 { margin: 0 0 10px; font-family: var(--display, serif); font-weight: 400; font-size: 20px; }
+.sj-body p { margin: 0 0 10px; font-size: 14px; line-height: 1.5; color: rgba(244, 241, 234, 0.85); }
+.sj-body b { color: #fff; font-weight: 700; }
+.sj-dim { color: rgba(244, 241, 234, 0.55) !important; font-size: 13px !important; }
+.sj-note { padding: 8px 12px; border-left: 2px solid var(--gold, #ffcf7a); background: rgba(255, 207, 122, 0.06); border-radius: 0 8px 8px 0; }
+
+.sj-tag {
+  display: inline-block; vertical-align: 1px; margin-left: 2px; padding: 0 6px; border-radius: 999px;
+  font-size: 10px; letter-spacing: 0.03em; line-height: 16px; border: 1px solid; cursor: help; white-space: nowrap;
+}
+.sj-tag.measured { color: #9ec8ff; border-color: rgba(158, 200, 255, 0.4); }
+.sj-tag.published { color: #d3b5ff; border-color: rgba(211, 181, 255, 0.4); }
+.sj-tag.modelled { color: #c9c3b5; border-color: rgba(201, 195, 181, 0.35); border-style: dashed; }
+
+.sj-fig { width: 100%; height: auto; display: block; margin: 4px 0 12px; overflow: visible; }
+.sj-axis { stroke: rgba(158, 200, 255, 0.35); stroke-width: 1.2; }
+.sj-t { font-size: 11px; fill: rgba(244, 241, 234, 0.55); font-family: var(--soft, system-ui); }
+.sj-t.strong, .sj-t .strong { fill: #fff; font-weight: 600; }
+.sj-glow { filter: drop-shadow(0 0 6px currentColor); }
+.sj-photon { filter: drop-shadow(0 0 4px #fff); }
+.sj-plot { background: rgba(255, 255, 255, 0.02); border-radius: 12px; }
+.sj-ghost { fill: none; stroke: rgba(255, 255, 255, 0.06); stroke-width: 1; }
+.sj-path { fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.9; }
+.sj-path.me { stroke-width: 2.4; }
+.sj-err { fill: rgba(255, 255, 255, 0.05); stroke: rgba(255, 255, 255, 0.25); stroke-dasharray: 2 3; }
+.sj-clock { font-family: var(--display, serif); font-size: 18px !important; color: var(--gold, #ffcf7a) !important; margin-bottom: 4px !important; font-variant-numeric: tabular-nums; }
+
+.sj-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.sj-replay { background: none; border: 1px solid rgba(255, 255, 255, 0.15); color: rgba(244, 241, 234, 0.8); border-radius: 999px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 12px; }
+.sj-replay:hover { border-color: rgba(255, 255, 255, 0.4); color: #fff; }
+
+.sj-key { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: rgba(244, 241, 234, 0.75); }
+.sj-key li { display: flex; align-items: center; gap: 6px; }
+.sj-key i { width: 9px; height: 9px; border-radius: 50%; }
+
+.sj-rule { padding: 10px 12px; margin-bottom: 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.035); }
+.sj-rule p { margin-bottom: 6px !important; }
+.sj-rule ol { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.7; color: rgba(244, 241, 234, 0.8); }
+.sj-rule ol span { color: #fff; font-weight: 600; }
+
+.sj-rel { list-style: none; margin: 0 0 12px; padding: 0; }
+.sj-rel li { display: grid; grid-template-columns: 10px 1fr; column-gap: 10px; padding: 7px 8px; border-radius: 8px; cursor: pointer; }
+.sj-rel li:hover { background: rgba(255, 255, 255, 0.05); }
+.sj-rel i { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; grid-row: span 2; }
+.sj-rel span { font-weight: 600; font-size: 14px; }
+.sj-rel em { font-style: normal; font-size: 12px; color: rgba(244, 241, 234, 0.55); }
+
+.sj-causes { margin: 0 0 10px; padding-left: 20px; font-size: 14px; line-height: 1.5; color: rgba(244, 241, 234, 0.85); }
+.sj-causes li { margin-bottom: 8px; }
+
+.sj-zone.harm { fill: rgba(255, 120, 130, 0.55); }
+.sj-zone.trace { fill: rgba(255, 207, 122, 0.4); }
+.sj-zone.safe { fill: rgba(127, 230, 196, 0.22); }
+
+.sj-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 18px 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); font-size: 12px; color: rgba(244, 241, 234, 0.45); }
+.sj-foot button { background: none; border: 0; color: rgba(244, 241, 234, 0.7); font: inherit; font-size: 13px; cursor: pointer; padding: 6px 4px; }
+.sj-foot button:disabled { opacity: 0.25; cursor: default; }
+.sj-foot .sj-next { background: var(--gold, #ffcf7a); color: #10131f; font-weight: 700; border-radius: 999px; padding: 7px 14px; }
+
+/* colour key */
+.sj-legend {
+  position: absolute; left: 24px; bottom: 132px; z-index: 3; width: 250px; padding: 12px 14px;
+  background: rgba(6, 9, 20, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 14px;
+  color: rgba(244, 241, 234, 0.85); font-family: var(--soft, system-ui); font-size: 13px; line-height: 1.35;
+}
+.sj-legend .sj-x { position: absolute; right: 8px; top: 6px; font-size: 18px; }
+.sj-legend-h { margin: 0 0 8px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(244, 241, 234, 0.5); }
+.sj-legend-row { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: center; margin-bottom: 9px; }
+.sj-legend-row small { color: rgba(244, 241, 234, 0.5); font-size: 11.5px; }
+.sj-temp { height: 8px; border-radius: 4px; background: linear-gradient(90deg, #9bb5ff, #fff, #ffd9a0, #ff9a5c); }
+.sj-rings { display: flex; }
+.sj-rings i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid; margin-right: -2px; }
+.sj-plain { width: 7px; height: 7px; border-radius: 50%; background: #dfe6ff; margin-left: 4px; }
+.sj-legend-tip { margin: 2px 0 0; font-size: 12px; color: var(--gold, #ffcf7a); }
+.sj-legend-btn {
+  position: absolute; left: 24px; bottom: 132px; z-index: 3; background: rgba(6, 9, 20, 0.6); border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(244, 241, 234, 0.75); border-radius: 999px; padding: 6px 12px; font: 600 12px var(--soft, system-ui); cursor: pointer;
+}
+
+/* while a star's story is open, the star list on the right steps aside */
+.sl-stars.sj-aside { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+
+/* star search results in the picker */
+.sj-found { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 18px; }
+.sj-found button { background: rgba(255, 255, 255, 0.06) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 999px; padding: 6px 12px !important; font: 600 14px var(--soft, system-ui) !important; color: var(--ink, #f4f1ea) !important; cursor: pointer; }
+.sj-found button small { font-weight: 400; color: rgba(244, 241, 234, 0.5); margin-left: 6px; }
+
+@media (max-width: 760px) {
+  .sj { left: 0; right: 0; top: auto; bottom: 0; width: auto; height: 68vh; border-radius: 18px 18px 0 0; z-index: 6; }
+  .sj-legend { left: 12px; right: 12px; width: auto; bottom: 150px; }
+  .sj-legend-btn { left: 12px; bottom: 150px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sj, .sj-body { animation: none; }
+}
+
+/* compact star card */
+.sc {
+  position: absolute; right: 24px; top: 84px; z-index: 4; width: 320px; padding: 16px 18px;
+  background: rgba(6, 9, 20, 0.82); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px;
+  color: var(--ink, #f4f1ea); font-family: var(--soft, system-ui); animation: sj-in 0.35s cubic-bezier(.2, .7, .2, 1) both;
+}
+.sc-x { position: absolute; right: 10px; top: 10px; }
+.sc h3 { margin: 0; font-family: var(--display, serif); font-weight: 400; font-size: 24px; display: flex; align-items: center; gap: 10px; }
+.sc h3 i { width: 11px; height: 11px; border-radius: 50%; box-shadow: 0 0 12px currentColor; }
+.sc-sub { margin: 2px 0 12px; font-size: 13px; color: rgba(244, 241, 234, 0.55); }
+.sc-rel { display: grid; grid-template-columns: 10px 1fr; gap: 10px; margin: 0 0 10px; font-size: 14px; line-height: 1.45; }
+.sc-rel > i { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; }
+.sc-rel b { color: #fff; }
+.sc-link { background: none; border: 0; padding: 0; color: #fff; font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-decoration-color: rgba(255, 255, 255, 0.3); text-underline-offset: 3px; }
+.sc-earth { margin: 0 0 10px; font-size: 13px; color: #ffb0a0; line-height: 1.4; }
+.sc-go { width: 100%; margin-top: 4px; padding: 9px 12px; border: 0; border-radius: 999px; background: #ffcf7a; color: #10131f; font: 700 13px var(--soft, system-ui); cursor: pointer; }
+@media (max-width: 760px) { .sc { left: 12px; right: 12px; width: auto; top: auto; bottom: 150px; } }
+.sl-history { color: #ffcf7a !important; }

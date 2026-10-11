@@ -614,6 +614,9 @@ def _encounter_text(r, ctrl, radius, cl):
         s += f" Control stars achieve this in {100 * c:.0f}% of realisations on average."
     else:
         s += " No control stars were available at a comparable distance, so the chance rate is untested."
+    if r["fraction_at_present"] > 0.5:
+        s += (" The closest approach is at the present epoch: the star is near the cluster today (it may be a "
+              "current member), so this is not a test of past ejection.")
     if np.isfinite(cl["age_myr"]) and -r["t_min_myr"]["median"] > cl["age_myr"]:
         s += " The encounter epoch predates the cluster's estimated age, which argues against ejection."
     return s

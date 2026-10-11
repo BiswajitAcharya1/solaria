@@ -11,17 +11,17 @@ Three levels of analysis, each with an interpretable statistic:
    errors deconvolved) with a one-sided 95% upper limit.
 
 3. **Hypothesis comparison** – Bayesian evidence ratio between
-     H_A  "single birth cloud": every member shares one abundance vector mu,
-          observed with its errors + floor; mu itself is drawn from the field
-          abundance distribution (so H_A pays for its free parameter);
-     H_B  "independent field stars": every member is an independent draw from
-          the field abundance distribution of comparable stars.
-   The field distribution is a Gaussian mixture fitted to a matched reference
-   sample.  Both evidences are analytic (Gaussian x Gaussian-mixture), including
-   missing elements, which are simply marginalised.
-   Because the GMM is only an approximation, the evidence ratio is always
-   reported together with an *empirical null distribution* from random field
-   groups of the same size (``calibrate_null``).
+      H_A  "single birth cloud": every member shares one abundance vector mu,
+           observed with its errors + floor; mu itself is drawn from the field
+           abundance distribution (so H_A pays for its free parameter);
+      H_B  "independent field stars": every member is an independent draw from
+           the field abundance distribution of comparable stars.
+    The field distribution is a Gaussian mixture fitted to a matched reference
+    sample.  Both evidences are analytic (Gaussian x Gaussian-mixture), including
+    missing elements, which are simply marginalised.
+    Because the GMM is only an approximation, the evidence ratio is always
+    reported together with an *empirical null distribution* from random field
+    groups of the same size (``calibrate_null``).
 """
 from __future__ import annotations
 
@@ -34,6 +34,7 @@ from scipy.special import logsumexp
 from sklearn.mixture import GaussianMixture
 
 from . import config as C
+from .cache import cached_compute
 
 ELEMENTS = C.CHEM_ELEMENTS
 
@@ -48,7 +49,7 @@ def matrices(df, elements=ELEMENTS):
 
 
 # ---------------------------------------------------------------------------
-# Pairwise comparison
+# Pairwise comparison (vectorized)
 # ---------------------------------------------------------------------------
 def pair_chi2(xi, ei, Xj, Ej, floor):
     """chi^2 between star i (K,) and stars j (M,K).  Returns chi2, dof, p, per-element terms."""
@@ -56,16 +57,23 @@ def pair_chi2(xi, ei, Xj, Ej, floor):
     ei = np.atleast_1d(ei)[None, :]
     Xj = np.atleast_2d(Xj)
     Ej = np.atleast_2d(Ej)
-    var = ei ** 2 + Ej ** 2 + 2.0 * np.asarray(floor)[None, :] ** 2
-    terms = (xi - Xj) ** 2 / var
+    floor_arr = np.asarray(floor)[None, :]
+    var = ei ** 2 + Ej ** 2 + 2.0 * floor_arr ** 2
+    diff = xi - Xj
+    terms = diff * diff / var
     ok = np.isfinite(terms)
-    terms = np.where(ok, terms, 0.0)
-    chi2 = terms.sum(1)
+    terms_safe = np.where(ok, terms, 0.0)
+    chi2 = terms_safe.sum(1)
     dof = ok.sum(1)
     with np.errstate(invalid="ignore"):
         p = np.where(dof > 0, stats.chi2.sf(chi2, np.maximum(dof, 1)), np.nan)
-    terms[~ok] = np.nan
+    terms = np.where(ok, terms, np.nan)
     return chi2, dof, p, terms
+
+
+def pair_chem2(xi, ei, Xj, Ej, floor):
+    """Alias for pair_chi2 for backward compatibility with siblings module."""
+    return pair_chi2(xi, ei, Xj, Ej, floor)
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +161,7 @@ class FieldModel:
         self.logdetS = np.linalg.slogdet(self.S)[1]
         self.mSm = np.einsum("ci,cij,cj->c", self.m, self.Sinv, self.m)
         self.Sinv_m = np.einsum("cij,cj->ci", self.Sinv, self.m)
+        self._cholesky_cache: dict[tuple, np.ndarray] = {}
 
     # -- per-star terms -----------------------------------------------------
     def terms(self, X, E, floor) -> StarTerms:
@@ -160,15 +169,17 @@ class FieldModel:
         E = np.atleast_2d(E)
         n, K = X.shape
         obs = np.isfinite(X) & np.isfinite(E)
-        var = np.where(obs, E ** 2 + np.asarray(floor)[None, :] ** 2, 1.0)
+        floor_arr = np.asarray(floor)[None, :]
+        var = np.where(obs, E ** 2 + floor_arr ** 2, 1.0)
         x0 = np.where(obs, X, 0.0)
         prec = np.where(obs, 1.0 / var, 0.0)
         b = x0 * prec
         const = np.where(obs, -0.5 * (LOG2PI + np.log(var)) - 0.5 * x0 ** 2 * prec, 0.0)
         lb = np.zeros(n)
-        # batched Gaussian-mixture log density, grouped by missing-data pattern
+
         patterns, inv = np.unique(obs, axis=0, return_inverse=True)
         inv = np.asarray(inv).ravel()
+
         for p_idx, pat in enumerate(patterns):
             rows = np.where(inv == p_idx)[0]
             o = np.where(pat)[0]
@@ -177,12 +188,21 @@ class FieldModel:
             xo = X[np.ix_(rows, o)]
             vo = var[np.ix_(rows, o)]
             comp = np.empty((self.w.size, rows.size))
+
             for c in range(self.w.size):
-                cov = self.S[c][np.ix_(o, o)][None, :, :] + vo[:, :, None] * np.eye(o.size)[None]
-                L = np.linalg.cholesky(cov)
-                y = np.linalg.solve(L, (xo - self.m[c, o])[:, :, None])[:, :, 0]
-                comp[c] = (np.log(self.w[c]) - 0.5 * (o.size * LOG2PI + np.sum(y ** 2, axis=1))
-                           - np.sum(np.log(np.diagonal(L, axis1=1, axis2=2)), axis=1))
+                Sc = self.S[c][np.ix_(o, o)]
+                # Full covariance per row: component + diagonal measurement variances
+                # vo is (rows, o.size) - diagonal variances per row
+                # Need to compute Cholesky of (Sc + diag(vo_i)) for each row
+                comp_c = np.empty(rows.size)
+                for i, row_idx in enumerate(rows):
+                    cov = Sc + np.diag(vo[i])
+                    L = np.linalg.cholesky(cov)
+                    diff = xo[i] - self.m[c, o]
+                    y = np.linalg.solve(L, diff)
+                    logdet = 2.0 * np.sum(np.log(np.diag(L)))
+                    comp_c[i] = (np.log(self.w[c]) - 0.5 * (o.size * LOG2PI + np.sum(y ** 2)) - 0.5 * logdet)
+                comp[c] = comp_c
             lb[rows] = logsumexp(comp, axis=0)
         return StarTerms(lb=lb, prec=prec, b=b, const=const)
 
@@ -247,8 +267,13 @@ def calibrate_null(field: FieldModel, Xref, Eref, floor, group_size: int, n_tria
     """ln(BF) for random groups drawn from the reference population (the null)."""
     rng = np.random.default_rng(seed)
     t = terms if terms is not None else field.terms(Xref, Eref, floor)
-    n = t.lb.size
-    return np.array([field.lnbf_from_terms(t, rng.choice(n, size=min(group_size, n), replace=False))
+    # Only use stars with all finite log-likelihoods
+    valid = np.isfinite(t.lb)
+    n = valid.sum()
+    if n < group_size:
+        return np.full(n_trials, -np.inf)
+    idx = np.where(valid)[0]
+    return np.array([field.lnbf_from_terms(t, rng.choice(idx, size=group_size, replace=False))
                      for _ in range(n_trials)])
 
 
